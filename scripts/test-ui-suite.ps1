@@ -8,7 +8,7 @@ $ErrorActionPreference = 'Stop'
 # a per-session instance lease and must never compete on the same desktop.
 $suites = @{
     navigation = @('platform', 'navigation', 'app-folders', 'first-input', 'search-selection', 'fidelity', 'startup', 'warm-resume', 'app-menus', 'jump-lists', 'release-info', 'file-pinning', 'icons')
-    layout = @('appearance', 'settings-preview', 'motion', 'placement', 'folder-drops', 'editing', 'scrolling')
+    layout = @('appearance', 'settings-preview', 'motion', 'placement', 'folder-drops', 'editing', 'scrolling', 'compact')
     tiles = @('bundled-tiles', 'studio', 'tile-data')
 }
 foreach ($check in $suites[$Suite]) {

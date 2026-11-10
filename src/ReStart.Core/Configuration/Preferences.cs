@@ -3,6 +3,15 @@ namespace ReStart.Core;
 /// <summary>Stores local UI and integration choices; imported layouts do not replace these settings.</summary>
 public sealed class Preferences
 {
+    internal const int DefaultCompactWidth = 800;
+    internal const int DefaultCompactHeight = 640;
+
+    /// <summary>Gets or sets the Start presentation. Existing layouts default to Fullscreen.</summary>
+    public StartMenuMode StartMenuMode { get; set; }
+    /// <summary>Gets or sets the last user-selected Compact width in device-independent pixels.</summary>
+    public int CompactMenuWidth { get; set; } = DefaultCompactWidth;
+    /// <summary>Gets or sets the last user-selected Compact height in device-independent pixels.</summary>
+    public int CompactMenuHeight { get; set; } = DefaultCompactHeight;
     /// <summary>Gets or sets a legacy tablet preference retained for layout compatibility; current shell integration ignores it. False by default.</summary>
     public bool TabletFeaturesEnabled { get; set; }
     /// <summary>Gets or sets a legacy keyboard-policy preference retained for layout compatibility; current shell integration ignores it. False by default.</summary>

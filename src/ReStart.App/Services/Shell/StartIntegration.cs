@@ -21,12 +21,13 @@ internal sealed class StartIntegration : IDisposable
     private int _visibilityGeneration;
     private uint _openedAt;
     internal bool WatchesForeground => Volatile.Read(ref _foreground) != 0;
+    private readonly nint _launcher;
     private readonly HwndSource _source;
     private readonly StartButtonLocator _startButtons = new();
     private volatile bool _captureStart;
     private readonly StartButtonPress _startPress = new();
     private volatile bool _captureWindows;
-    private volatile bool _menuOpen, _dismissOnTaskbar;
+    private volatile bool _menuOpen, _dismissOnTaskbar, _dismissOutsideCompact;
     private readonly Thread _hookThread;
     private uint _hookThreadId;
     public string? Status { get; private set; }
@@ -40,6 +41,7 @@ internal sealed class StartIntegration : IDisposable
         _keyboardCallback = KeyboardHook;
         _mouseCallback = MouseHook;
         _foregroundCallback = ForegroundChanged;
+        _launcher = handle;
         _source = HwndSource.FromHwnd(handle)!;
         _source.AddHook(WindowProc);
         using var ready = new ManualResetEventSlim();
@@ -76,6 +78,7 @@ internal sealed class StartIntegration : IDisposable
         _captureStart = preferences.CaptureStartButton;
         _startButtons.SetEnabled(_captureStart);
         _dismissOnTaskbar = preferences.CloseOnDeactivate;
+        _dismissOutsideCompact = preferences.StartMenuMode == StartMenuMode.Compact;
         Native.PostThreadMessage(_hookThreadId, 0x8001, 0, 0);
     }
 
@@ -117,7 +120,7 @@ internal sealed class StartIntegration : IDisposable
             // Recheck current ownership to discard queued events after reopen.
             if (!_menuOpen || !_dismissOnTaskbar || generation != Volatile.Read(ref _visibilityGeneration)) return;
             var current = Native.GetForegroundWindow();
-            if (current == 0 || current != window || IsOwnedForeground(current)) return;
+            if (current == 0 || current != window || IsOwnedWindow(current)) return;
             var name = new System.Text.StringBuilder(128);
             Native.GetClassName(Native.GetAncestor(current, 2), name, 128);
             if (name.ToString() is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd" or "TaskListThumbnailWnd" or "#32768") return;
@@ -125,7 +128,7 @@ internal sealed class StartIntegration : IDisposable
         }, DispatcherPriority.Input);
     }
 
-    private bool IsOwnedForeground(nint window)
+    private bool IsOwnedWindow(nint window)
     {
         if (window == _source.Handle || Native.GetAncestor(window, 3) == Native.GetAncestor(_source.Handle, 3)) return true;
         // WPF can use a hidden native owner for windows omitted from the
@@ -176,10 +179,20 @@ internal sealed class StartIntegration : IDisposable
         {
             var data = Marshal.PtrToStructure<Native.MouseData>(lp);
             var window = Native.WindowFromPoint(data.Point);
+            var root = Native.GetAncestor(window, 2);
             var rootName = new System.Text.StringBuilder(128);
-            Native.GetClassName(Native.GetAncestor(window, 2), rootName, 128);
+            Native.GetClassName(root, rootName, 128);
             if (rootName.ToString() is "Shell_TrayWnd" or "Shell_SecondaryTrayWnd" or "TaskListThumbnailWnd")
                 _dispatcher.BeginInvoke(_dismiss, DispatcherPriority.Input);
+            else if (_dismissOutsideCompact && window != 0 && root != _launcher)
+            {
+                var generation = Volatile.Read(ref _visibilityGeneration);
+                _dispatcher.BeginInvoke(() =>
+                {
+                    if (_menuOpen && _dismissOnTaskbar && _dismissOutsideCompact &&
+                        generation == Volatile.Read(ref _visibilityGeneration) && !IsOwnedWindow(window)) _dismiss();
+                }, DispatcherPriority.Input);
+            }
         }
         return Native.CallNextHookEx(_mouse, code, wp, lp);
     }

@@ -321,6 +321,24 @@ internal sealed class TaskbarNativeBackend(Func<IEnumerable<TaskbarWindowState>>
             yield return next; previous = next;
         }
     }
+
+    /// <summary>Identifies the Explorer taskbar edge on a physical monitor, including a registered auto-hide bar.</summary>
+    internal static TaskbarEdge DockedEdge(System.Drawing.Rectangle bounds, System.Drawing.Rectangle workingArea)
+    {
+        var monitor = new TaskbarBounds(bounds.X, bounds.Y, bounds.Width, bounds.Height);
+        var autoHide = AutoHideEnabled;
+        foreach (var window in Taskbars())
+        {
+            if (!Identity(window, out _, out _)) continue;
+            if (autoHide && AutoHideEdge(window, monitor) is { } registered) return (TaskbarEdge)registered;
+            if (!Monitor(window, out var owner) || owner != monitor || !Bounds(window, out var bar)) continue;
+            if (bar.Width >= monitor.Width / 2 && bar.Height < monitor.Height / 2)
+                return bar.Y + bar.Height / 2 < monitor.Y + monitor.Height / 2 ? TaskbarEdge.Top : TaskbarEdge.Bottom;
+            if (bar.Height >= monitor.Height / 2 && bar.Width < monitor.Width / 2)
+                return bar.X + bar.Width / 2 < monitor.X + monitor.Width / 2 ? TaskbarEdge.Left : TaskbarEdge.Right;
+        }
+        return CompactMenuBounds.InferDock(bounds, workingArea);
+    }
     private static bool Identity(nint window, out int pid, out long started)
     {
         pid = 0; started = 0;

@@ -16,6 +16,8 @@ internal sealed partial class SettingsWindow
 
     private void BuildAppearance(Panel content)
     {
+        Select(content, L.T(K.SettingsStartMenuMode), new[] { L.T(K.StartMenuFullscreen), L.T(K.StartMenuCompact) },
+            (int)_draft.StartMenuMode, i => _draft.StartMenuMode = (StartMenuMode)i);
         _baseTheme = Select(content, L.T(K.SettingsBaseTheme), new[] { L.T(K.ThemeSystem), L.T(K.ThemeDark), L.T(K.ThemeLight) }, (int)_draft.Theme, i =>
         {
             _draft.Theme = (ReStart.Core.ThemeMode)i;

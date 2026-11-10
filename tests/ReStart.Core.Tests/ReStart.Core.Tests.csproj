@@ -28,6 +28,7 @@
     <Compile Include="..\..\src\ReStart.App\Services\Shell\TaskbarRecovery.cs" Link="Services/Shell/TaskbarRecovery.cs" />
     <Compile Include="..\..\src\ReStart.App\Services\Shell\TaskbarWatchdog.cs" Link="Services/Shell/TaskbarWatchdog.cs" />
     <Compile Include="..\..\src\ReStart.App\Services\Shell\TaskbarNativeBackend.cs" Link="Services/Shell/TaskbarNativeBackend.cs" />
+    <Compile Include="..\..\src\ReStart.App\Services\Shell\CompactMenuBounds.cs" Link="Services/Shell/CompactMenuBounds.cs" />
     <Compile Include="..\..\src\ReStart.App\Services\Shell\TaskbarNativeRegion.cs" Link="Services/Shell/TaskbarNativeRegion.cs" />
     <Compile Include="..\..\src\ReStart.App\Services\Shell\NativeJumpContract.cs" Link="Services/Shell/NativeJumpContract.cs" />
     <Compile Include="..\..\src\ReStart.App\Services\Search\SettingsSearch.cs" Link="Services/Search/SettingsSearch.cs" />

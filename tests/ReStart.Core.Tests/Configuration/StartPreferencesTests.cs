@@ -14,6 +14,31 @@ public class StartPreferencesTests
         Assert.False(preferences.ShowMostUsed); Assert.Null(preferences.NavigationFolders);
         Assert.True(preferences.ShowAppTasks && preferences.ShowPinnedJumpLists && preferences.ShowCustomJumpLists);
         Assert.False(preferences.SearchFileContents);
+        Assert.Equal(StartMenuMode.Fullscreen, preferences.StartMenuMode);
+        Assert.Equal(800, preferences.CompactMenuWidth);
+        Assert.Equal(640, preferences.CompactMenuHeight);
+    }
+
+    [Fact]
+    public void CompactMenuRoundTripsWithItsPreferredSizeAndNormalizesInvalidValues()
+    {
+        var document = new LayoutDocument
+        {
+            Preferences = new() { StartMenuMode = StartMenuMode.Compact, CompactMenuWidth = 987, CompactMenuHeight = 543 }
+        };
+        var restored = JsonSerializer.Deserialize<LayoutDocument>(JsonSerializer.Serialize(document, LayoutStore.JsonOptions), LayoutStore.JsonOptions)!;
+        restored.Normalize();
+        Assert.Equal(StartMenuMode.Compact, restored.Preferences.StartMenuMode);
+        Assert.Equal(987, restored.Preferences.CompactMenuWidth);
+        Assert.Equal(543, restored.Preferences.CompactMenuHeight);
+
+        restored.Preferences.StartMenuMode = (StartMenuMode)42;
+        restored.Preferences.CompactMenuWidth = 0;
+        restored.Preferences.CompactMenuHeight = -1;
+        restored.Normalize();
+        Assert.Equal(StartMenuMode.Fullscreen, restored.Preferences.StartMenuMode);
+        Assert.Equal(800, restored.Preferences.CompactMenuWidth);
+        Assert.Equal(640, restored.Preferences.CompactMenuHeight);
     }
     [Fact]
     public void NativeJumpSettingsRoundTripIndependentlyOfHistoryAndLayoutLock()

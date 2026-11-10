@@ -808,6 +808,12 @@ public enum TextKey
     SettingsColorThemes,
     /// <summary>Base theme</summary>
     SettingsBaseTheme,
+    /// <summary>Labels the Start presentation selector.</summary>
+    SettingsStartMenuMode,
+    /// <summary>Names the original full-screen Start presentation.</summary>
+    StartMenuFullscreen,
+    /// <summary>Names the resizable Compact Start presentation.</summary>
+    StartMenuCompact,
     /// <summary>Background color</summary>
     SettingsBackgroundColor,
     /// <summary>Use #RRGGBB. An empty background uses the base theme. Text and controls adjust for readable contrast.</summary>

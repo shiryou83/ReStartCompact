@@ -158,18 +158,16 @@ public partial class MainWindow
     private void SizeStartupContent()
     {
         var handle = new WindowInteropHelper(this).EnsureHandle();
-        if (!_preview)
+        var size = new Point(Width, Height);
+        if (UsesNativeStartBounds)
         {
             var screen = System.Windows.Forms.Screen.FromPoint(_startupPoint);
-            var area = NativeWorkingArea?.Invoke(screen) ?? screen.WorkingArea;
             _wallpaperMonitor = screen.Bounds; RefreshWallpaper();
             // Size the hidden HWND without showing it or taking focus from the splash.
-            Services.MonitorPlacement.FitWorkingArea(handle, 0, area, 0x0014, NativeWorkingArea);
+            var area = PlaceStartWindow(handle, screen, 0, 0x0014, opening: true);
+            var transform = HwndSource.FromHwnd(handle).CompositionTarget.TransformFromDevice;
+            size = transform.Transform(new Point(area.Width, area.Height));
         }
-        var transform = HwndSource.FromHwnd(handle).CompositionTarget.TransformFromDevice;
-        var startupScreen = System.Windows.Forms.Screen.FromPoint(_startupPoint);
-        var startupArea = NativeWorkingArea?.Invoke(startupScreen) ?? startupScreen.WorkingArea;
-        var size = !_preview ? transform.Transform(new Point(startupArea.Width, startupArea.Height)) : new Point(Width, Height);
         Root.Measure(new Size(size.X, size.Y)); Root.Arrange(new Rect(0, 0, size.X, size.Y)); Root.UpdateLayout();
         FitPanels(); Root.UpdateLayout();
     }

@@ -121,8 +121,10 @@ public partial class MainWindow : Window
         Closed += (_, _) => _artworkCancellation?.Cancel();
         SourceInitialized += (_, _) =>
         {
+            var handle = new WindowInteropHelper(this).Handle;
             var square = 1;
-            Native.DwmSetWindowAttribute(new WindowInteropHelper(this).Handle, 33, ref square, sizeof(int));
+            Native.DwmSetWindowAttribute(handle, 33, ref square, sizeof(int));
+            InitializeCompactFrame(handle);
         };
         SizeChanged += (_, _) => FitPanels();
         ContentArea.SizeChanged += (_, _) => FitPanels();
@@ -260,15 +262,13 @@ public partial class MainWindow : Window
         _focusOnActivation = true;
         if (!_preview) TaskbarNativeBackend.PrepareLauncher(handle, Document.Preferences.ShowTaskbarWhileOpen);
         if (wasHidden && MotionEnabled) Opacity = EntranceOpacity;
-        if (!_preview)
+        if (UsesNativeStartBounds)
         {
             var screen = System.Windows.Forms.Screen.FromPoint(_startButtonPoint ?? System.Windows.Forms.Cursor.Position);
-            var area = NativeWorkingArea?.Invoke(screen) ?? screen.WorkingArea;
             _wallpaperMonitor = screen.Bounds;
             // Place the hidden HWND first so visibility observers do not acquire
             // a taskbar on the previous display during a cross-monitor opening.
-            MonitorPlacement.FitWorkingArea(handle, new nint(-1), area, 0x0010, NativeWorkingArea);
-            ApplyTaskbarContentInsets(area, NativeContentArea?.Invoke(screen) ?? area, VisualTreeHelper.GetDpi(this));
+            PlaceStartWindow(handle, screen, new nint(-1), 0x0010, opening: true);
         }
         if (!IsVisible) Show();
         if (!_preview || _openingWallpaperFixture != null) QueueOpeningWallpaperRefresh();
@@ -374,6 +374,7 @@ public partial class MainWindow : Window
         RenderGroups();
         RenderApps();
         SearchChanged(SearchBox, new TextChangedEventArgs(TextBox.TextChangedEvent, UndoAction.None));
+        if (UsesNativeStartBounds && IsVisible && WantsCompact != _compactFrame) RefitNativeBounds();
     }
 
     private static SolidColorBrush Brush(string color, string fallback)
@@ -1127,7 +1128,7 @@ public partial class MainWindow : Window
     public void DismissFromTaskbar()
     {
         if (_startupWindow != null && Document.Preferences.CloseOnDeactivate) { CancelStartupPresentation(); return; }
-        if (IsVisible && _dialogDepth == 0 && !_dragging && Document.Preferences.CloseOnDeactivate) Dismiss();
+        if (IsVisible && _dialogDepth == 0 && !_dragging && !_compactResizeStart.HasValue && Document.Preferences.CloseOnDeactivate) Dismiss();
     }
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
@@ -1174,9 +1175,10 @@ public partial class MainWindow : Window
     private void OnDeactivated(object? sender, EventArgs e)
     {
         _focusOnActivation = false;
+        if (_compactResizeStart.HasValue) return;
         Dispatcher.BeginInvoke(() =>
         {
-            if (!IsActive && _dialogDepth == 0 && !_dragging && Document.Preferences.CloseOnDeactivate && (!_preview || _verifyNativeActivation) && !IsAnyMenuOpen()) Dismiss();
+            if (!IsActive && _dialogDepth == 0 && !_dragging && !_compactResizeStart.HasValue && Document.Preferences.CloseOnDeactivate && (!_preview || _verifyNativeActivation) && !IsAnyMenuOpen()) Dismiss();
         }, DispatcherPriority.Background);
     }
     private static bool IsAnyMenuOpen() => Mouse.Captured is ContextMenu || Mouse.Captured is System.Windows.Controls.Primitives.MenuBase;

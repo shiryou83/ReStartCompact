@@ -34,6 +34,7 @@ public partial class MainWindow
     protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
     {
         base.OnDpiChanged(oldDpi, newDpi);
+        QueueCompactRefit();
         QueueAppearanceRefresh(recreateWebPresentations: true);
     }
 

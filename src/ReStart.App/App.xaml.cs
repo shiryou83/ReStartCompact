@@ -61,6 +61,11 @@ public partial class App : Application
             return;
         }
         if (e.Args.Contains("--observe-keyboard")) { Shutdown(1); return; }
+        if (e.Args.Contains("--compact-test"))
+        {
+            Shutdown(e.Args is ["--compact-test", var compactSnapshot] ? await RunCompactCheckAsync(compactSnapshot) : 1);
+            return;
+        }
         if (e.Args is ["--jump-list-worker"])
         {
             ShutdownMode = ShutdownMode.OnExplicitShutdown;

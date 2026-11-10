@@ -18,9 +18,27 @@ public partial class MainWindow
         var handle = new WindowInteropHelper(this).Handle;
         if (handle == 0) return;
         var screen = System.Windows.Forms.Screen.FromHandle(handle);
+        if (UsesNativeStartBounds && IsPresenting)
+        {
+            PlaceStartWindow(handle, screen, 0, 0x0014);
+            return;
+        }
         var area = NativeWorkingArea?.Invoke(screen) ?? screen.WorkingArea;
-        if (!_preview && IsPresenting) MonitorPlacement.FitWorkingArea(handle, 0, area, 0x0014, NativeWorkingArea);
         ApplyTaskbarContentInsets(area, NativeContentArea?.Invoke(screen) ?? area, VisualTreeHelper.GetDpi(this));
+    }
+
+    private System.Drawing.Rectangle PlaceStartWindow(nint handle, System.Windows.Forms.Screen screen, nint after, uint flags, bool opening = false)
+    {
+        var area = NativeWorkingArea?.Invoke(screen) ?? screen.WorkingArea;
+        var safe = NativeContentArea?.Invoke(screen) ?? area;
+        if (WantsCompact)
+        {
+            ClearTaskbarContentInsets();
+            return FitCompactBounds(handle, after, flags, screen, safe.Width > 0 && safe.Height > 0 ? safe : screen.Bounds, opening);
+        }
+        MonitorPlacement.FitWorkingArea(handle, after, area, flags | UpdateCompactFrame(handle, false), NativeWorkingArea);
+        ApplyTaskbarContentInsets(area, safe, VisualTreeHelper.GetDpi(this));
+        return area;
     }
 
     /// <summary>Offsets interactive content using DPI-correct taskbar overlap while leaving native/background geometry unchanged.</summary>

@@ -30,6 +30,9 @@ public sealed class LayoutDocument
         else if (Version != CurrentVersion)
             throw new UnsupportedLayoutVersionException(Version);
         Preferences ??= new();
+        if (!Enum.IsDefined(Preferences.StartMenuMode)) Preferences.StartMenuMode = StartMenuMode.Fullscreen;
+        if (Preferences.CompactMenuWidth <= 0) Preferences.CompactMenuWidth = ReStart.Core.Preferences.DefaultCompactWidth;
+        if (Preferences.CompactMenuHeight <= 0) Preferences.CompactMenuHeight = ReStart.Core.Preferences.DefaultCompactHeight;
         if (ReleaseVersion.Parse(SavedWithAppVersion) == null) SavedWithAppVersion = "";
         if (LastUpgrade != null && (LastUpgrade.BackupFile == null || LastUpgrade.FromAppVersion == null || LastUpgrade.ToAppVersion == null
             || LastUpgrade.BackupFile.Length > 100 || LastUpgrade.BackupFile != Path.GetFileName(LastUpgrade.BackupFile)
