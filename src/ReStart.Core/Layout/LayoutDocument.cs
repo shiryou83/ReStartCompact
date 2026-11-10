@@ -33,6 +33,8 @@ public sealed class LayoutDocument
         if (!Enum.IsDefined(Preferences.StartMenuMode)) Preferences.StartMenuMode = StartMenuMode.Fullscreen;
         if (Preferences.CompactMenuWidth <= 0) Preferences.CompactMenuWidth = ReStart.Core.Preferences.DefaultCompactWidth;
         if (Preferences.CompactMenuHeight <= 0) Preferences.CompactMenuHeight = ReStart.Core.Preferences.DefaultCompactHeight;
+        Preferences.CompactBackgroundOpacity = double.IsFinite(Preferences.CompactBackgroundOpacity)
+            ? Math.Clamp(Preferences.CompactBackgroundOpacity, 0, 1) : ReStart.Core.Preferences.DefaultCompactBackgroundOpacity;
         if (ReleaseVersion.Parse(SavedWithAppVersion) == null) SavedWithAppVersion = "";
         if (LastUpgrade != null && (LastUpgrade.BackupFile == null || LastUpgrade.FromAppVersion == null || LastUpgrade.ToAppVersion == null
             || LastUpgrade.BackupFile.Length > 100 || LastUpgrade.BackupFile != Path.GetFileName(LastUpgrade.BackupFile)
@@ -97,6 +99,7 @@ public sealed class LayoutDocument
             tile.ScriptId ??= "";
             tile.Color ??= "";
             if (tile.UseCustomColor && (tile.Color.Length != 7 || tile.Color[0] != '#' || !tile.Color.Skip(1).All(Uri.IsHexDigit))) tile.UseCustomColor = false;
+            if (tile.UseCustomColor || !Enum.IsDefined(tile.ThemeColor)) tile.ThemeColor = TileThemeColor.Automatic;
             tile.Children ??= [];
             if (!Enum.IsDefined(tile.Size)) tile.Size = TileSize.Medium;
             if (tile.Column is < 0 or > 15 || tile.Row is < 0 or > 200 || tile.Column.HasValue != tile.Row.HasValue)

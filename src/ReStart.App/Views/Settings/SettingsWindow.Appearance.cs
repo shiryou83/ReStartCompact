@@ -18,6 +18,10 @@ internal sealed partial class SettingsWindow
     {
         Select(content, L.T(K.SettingsStartMenuMode), new[] { L.T(K.StartMenuFullscreen), L.T(K.StartMenuCompact) },
             (int)_draft.StartMenuMode, i => _draft.StartMenuMode = (StartMenuMode)i);
+        Check(content, L.T(K.SettingsTransparentCompactBackground), _draft.TransparentCompactBackground,
+            value => _draft.TransparentCompactBackground = value);
+        Slide(content, L.T(K.SettingsCompactTint), 0, 1, _draft.CompactBackgroundOpacity,
+            value => _draft.CompactBackgroundOpacity = value, false);
         _baseTheme = Select(content, L.T(K.SettingsBaseTheme), new[] { L.T(K.ThemeSystem), L.T(K.ThemeDark), L.T(K.ThemeLight) }, (int)_draft.Theme, i =>
         {
             _draft.Theme = (ReStart.Core.ThemeMode)i;

@@ -87,9 +87,11 @@ public partial class MainWindow
 
     private (bool Enabled, string? Path, System.Drawing.Rectangle Monitor) WallpaperRead(string? fixturePath = null)
     {
+        var monitor = _wallpaperMonitor ?? System.Windows.Forms.Screen.PrimaryScreen!.Bounds;
+        if (HasTransparentCompactBackground) return (false, null, monitor);
         var selected = fixturePath ?? (DisplayPreferences.UseCustomBackground ? new BackgroundImageStore(Path.GetDirectoryName(_store.FilePath)!).Resolve(DisplayPreferences.CustomBackgroundId) : null);
         return (DisplayPreferences.ShowWallpaper && !SystemParameters.HighContrast && (!_preview || _openingWallpaperFixture != null || fixturePath != null || DisplayPreferences.UseCustomBackground)
-            && (!DisplayPreferences.UseCustomBackground || selected != null), selected, _wallpaperMonitor ?? System.Windows.Forms.Screen.PrimaryScreen!.Bounds);
+            && (!DisplayPreferences.UseCustomBackground || selected != null), selected, monitor);
     }
 
     private void ApplyWallpaper(DesktopWallpaperSource.Snapshot snapshot)

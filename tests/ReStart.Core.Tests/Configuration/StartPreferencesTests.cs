@@ -15,6 +15,8 @@ public class StartPreferencesTests
         Assert.True(preferences.ShowAppTasks && preferences.ShowPinnedJumpLists && preferences.ShowCustomJumpLists);
         Assert.False(preferences.SearchFileContents);
         Assert.Equal(StartMenuMode.Fullscreen, preferences.StartMenuMode);
+        Assert.False(preferences.TransparentCompactBackground);
+        Assert.Equal(.65, preferences.CompactBackgroundOpacity);
         Assert.Equal(800, preferences.CompactMenuWidth);
         Assert.Equal(640, preferences.CompactMenuHeight);
     }
@@ -24,11 +26,20 @@ public class StartPreferencesTests
     {
         var document = new LayoutDocument
         {
-            Preferences = new() { StartMenuMode = StartMenuMode.Compact, CompactMenuWidth = 987, CompactMenuHeight = 543 }
+            Preferences = new()
+            {
+                StartMenuMode = StartMenuMode.Compact,
+                TransparentCompactBackground = true,
+                CompactBackgroundOpacity = .4,
+                CompactMenuWidth = 987,
+                CompactMenuHeight = 543
+            }
         };
         var restored = JsonSerializer.Deserialize<LayoutDocument>(JsonSerializer.Serialize(document, LayoutStore.JsonOptions), LayoutStore.JsonOptions)!;
         restored.Normalize();
         Assert.Equal(StartMenuMode.Compact, restored.Preferences.StartMenuMode);
+        Assert.True(restored.Preferences.TransparentCompactBackground);
+        Assert.Equal(.4, restored.Preferences.CompactBackgroundOpacity);
         Assert.Equal(987, restored.Preferences.CompactMenuWidth);
         Assert.Equal(543, restored.Preferences.CompactMenuHeight);
 

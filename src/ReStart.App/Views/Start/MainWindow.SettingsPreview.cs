@@ -46,6 +46,7 @@ public partial class MainWindow
         p.Accent,
         p.BackgroundColor,
         p.ShowAccentOnStart,
+        p.TransparentCompactBackground,
         p.ColoredTiles,
         p.UseAppTileImages,
         p.Columns,

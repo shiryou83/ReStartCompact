@@ -35,6 +35,9 @@ public sealed class Tile
     public string Color { get; set; } = "";
     /// <summary>Gets or sets whether an explicitly selected tile color overrides the shared theme and script background.</summary>
     public bool UseCustomColor { get; set; }
+    /// <summary>Gets or sets the adaptive color override when a fixed custom color is absent.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    public TileThemeColor ThemeColor { get; set; }
     /// <summary>Gets or sets a built-in widget kind; script identifies a local JavaScript package.</summary>
     public string Widget { get; set; } = "";
     /// <summary>Gets or sets an installed package identifier, never an arbitrary source-file path.</summary>

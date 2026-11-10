@@ -238,12 +238,12 @@ public partial class MainWindow
                             highContrast = SystemParameters.HighContrast,
                             reducedMotion = !MotionEnabled,
                             accent = DisplayPreferences.Accent,
-                            customColor = view.Tile.UseCustomColor ? view.Tile.Color : null
+                            customColor = TileOverrideBrush(view.Tile) is { } tileColor ? TileColorHex(tileColor.Color) : null
                         },
                         appearance = new { showTitle = DisplayPreferences.ShowLiveTileNames },
                         title = TileDisplayName(view.Tile)
                     };
-                    var (frame, error) = manifest.Renderer == "web" ? await RenderHtmlTileAsync(view.Tile, context, package) : await pool.RenderAsync(source, context);
+                    var (frame, error) = manifest.Renderer == "web" ? await RenderHtmlTileAsync(view.Tile, view.Button, context, package) : await pool.RenderAsync(source, context);
                     if (!_scriptSessions.TryGetValue(view.Tile.Id, out var latest) || latest != session || !IsVisible && !_startupPreparing || _scriptWorkerPool != pool) return;
                     if (generation != _scriptPresentationGeneration) { session.NextUpdate = DateTimeOffset.MinValue; return; }
                     if (frame == null && error != null)
@@ -304,7 +304,8 @@ public partial class MainWindow
         System.Windows.Automation.AutomationProperties.SetName(button, title);
         if (button.Content is Grid tileGrid)
             foreach (var label in tileGrid.Children.OfType<TextBlock>().Where(text => text.Tag == tile)) label.Text = title;
-        if (!SystemParameters.HighContrast && !tile.UseCustomColor)
+        var hasColorOverride = HasTileColorOverride(tile);
+        if (!SystemParameters.HighContrast && !hasColorOverride)
         {
             button.Background = frame.Background.Length == 0 ? (System.Windows.Media.Brush)FindResource("AccentBrush") : Brush(frame.Background, DisplayPreferences.Accent);
             if (frame.BackgroundEnd.Length > 0 && button.Background is SolidColorBrush start)
@@ -314,11 +315,11 @@ public partial class MainWindow
         if (body.Parent is Grid parent && parent.Children.OfType<ScriptTileArt>().FirstOrDefault() is { } art)
         {
             ArrangeScriptFrame(parent, body, art, tile, frame);
-            art.Frame = frame; art.Ink = frame.Accent.Length == 0 || tile.UseCustomColor ? button.Foreground : Brush(frame.Accent, "#FFFFFF");
+            art.Frame = frame; art.Ink = frame.Accent.Length == 0 || hasColorOverride ? button.Foreground : Brush(frame.Accent, "#FFFFFF");
             art.InvalidateVisual();
         }
         if (button.Content is Grid imageParent && imageParent.Children.OfType<SlideshowTileView>().FirstOrDefault() is { } photos)
-            photos.SetSource(frame.Image == "current" && !tile.UseCustomColor && !SystemParameters.HighContrast && _slideshowImages.TryGetValue(tile.Id, out var image) ? image : null,
+            photos.SetSource(frame.Image == "current" && !hasColorOverride && !SystemParameters.HighContrast && _slideshowImages.TryGetValue(tile.Id, out var image) ? image : null,
                 DisplayPreferences.Animate);
         if (tile.Size != TileSize.Small && frame.Kicker.Length > 0)
             body.Children.Add(new TextBlock { Text = frame.Kicker, FontSize = 10, Opacity = 0.8, MaxHeight = 12, TextTrimming = TextTrimming.CharacterEllipsis });

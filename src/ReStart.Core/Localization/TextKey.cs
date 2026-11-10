@@ -786,8 +786,12 @@ public enum TextKey
     SettingsStartAccentHelp,
     /// <summary>Tile background color</summary>
     TileBackgroundColor,
-    /// <summary>Use theme color</summary>
+    /// <summary>Labels the active theme's background as a tile color.</summary>
     TileThemeColor,
+    /// <summary>Labels the ordinary app, widget, or shared tile appearance.</summary>
+    TileAutomaticColor,
+    /// <summary>Labels the active theme's accent as a tile background.</summary>
+    TileThemeAccent,
     /// <summary>Custom color…</summary>
     TileCustomColor,
     /// <summary>Background color (#RRGGBB)</summary>
@@ -810,6 +814,10 @@ public enum TextKey
     SettingsBaseTheme,
     /// <summary>Labels the Start presentation selector.</summary>
     SettingsStartMenuMode,
+    /// <summary>Labels the option to show windows behind the Compact Start background.</summary>
+    SettingsTransparentCompactBackground,
+    /// <summary>Labels the opacity slider for the theme tint over the Compact backdrop.</summary>
+    SettingsCompactTint,
     /// <summary>Names the original full-screen Start presentation.</summary>
     StartMenuFullscreen,
     /// <summary>Names the resizable Compact Start presentation.</summary>

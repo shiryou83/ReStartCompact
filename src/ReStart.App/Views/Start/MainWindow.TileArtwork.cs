@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ReStart.App.Controls;
 using ReStart.App.Services;
 using ReStart.Core;
 
@@ -9,7 +10,7 @@ namespace ReStart.App;
 
 public partial class MainWindow
 {
-    private sealed record ArtworkView(Tile Tile, Button Button, Grid Surface, FrameworkElement Icon, Brush Background, Brush Foreground)
+    private sealed record ArtworkView(Tile Tile, TileSurfaceButton Button, Grid Surface, FrameworkElement Icon, Brush Background, Brush Foreground)
     {
         internal TileArtworkLoader.Frame? Current { get; set; }
     }
@@ -22,10 +23,11 @@ public partial class MainWindow
     private bool ArtworkHighContrast => _artworkHighContrastFixture ?? SystemParameters.HighContrast;
     private Func<IReadOnlyList<TileArtworkLoader.Request>, CancellationToken, Task<IReadOnlyDictionary<(string App, TileSize Size), TileArtworkLoader.Frame>>>? _artworkFixture;
 
-    private FrameworkElement ArtworkSurface(Tile tile, Button button, FrameworkElement icon)
+    private FrameworkElement ArtworkSurface(Tile tile, TileSurfaceButton button, FrameworkElement icon)
     {
         var surface = new Grid { ClipToBounds = true }; surface.Children.Add(icon);
-        if (tile.Widget.Length == 0 && !tile.IsFolder)
+        // Full-tile artwork can paint over the selected theme color. Keep the app icon on those tiles.
+        if (tile.Widget.Length == 0 && !tile.IsFolder && tile.ThemeColor == TileThemeColor.Automatic)
             _artworkViews.Add(new(tile, button, surface, icon, button.Background, button.Foreground));
         return surface;
     }
@@ -95,7 +97,7 @@ public partial class MainWindow
                 try
                 {
                     if (frame.Background.Length is > 0 and <= 32 && ColorConverter.ConvertFromString(frame.Background) is Color color && color.A > 0)
-                    { view.Button.Background = new SolidColorBrush(color); view.Button.Foreground = ReadableInk(color); }
+                    { view.Button.Background = new SolidColorBrush(color); view.Button.Foreground = ReadableTileInk(color, view.Button.PlateOpacity); }
                 }
                 catch (Exception ex) when (ex is FormatException or NotSupportedException) { }
                 if (frame.Foreground.Equals("light", StringComparison.OrdinalIgnoreCase)) view.Button.Foreground = Brushes.White;

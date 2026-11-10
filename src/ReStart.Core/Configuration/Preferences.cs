@@ -5,9 +5,14 @@ public sealed class Preferences
 {
     internal const int DefaultCompactWidth = 800;
     internal const int DefaultCompactHeight = 640;
+    internal const double DefaultCompactBackgroundOpacity = .65;
 
     /// <summary>Gets or sets the Start presentation. Existing layouts default to Fullscreen.</summary>
     public StartMenuMode StartMenuMode { get; set; }
+    /// <summary>Gets or sets whether Compact shows the windows behind its background. Defaults to false.</summary>
+    public bool TransparentCompactBackground { get; set; }
+    /// <summary>Gets or sets the opacity of the theme tint over the transparent Compact background, from 0 to 1.</summary>
+    public double CompactBackgroundOpacity { get; set; } = DefaultCompactBackgroundOpacity;
     /// <summary>Gets or sets the last user-selected Compact width in device-independent pixels.</summary>
     public int CompactMenuWidth { get; set; } = DefaultCompactWidth;
     /// <summary>Gets or sets the last user-selected Compact height in device-independent pixels.</summary>

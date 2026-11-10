@@ -1,9 +1,12 @@
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
+using ReStart.App.Controls;
 using ReStart.App.Services;
 using ReStart.Core;
 using Drawing = System.Drawing;
@@ -39,7 +42,15 @@ public partial class MainWindow
         var store = new LayoutStore(Path.Combine(Path.GetDirectoryName(snapshotPath)!, "compact-" + Guid.NewGuid().ToString("N"), "layout.json"));
         store.Save(new()
         {
-            Preferences = new() { StartMenuMode = StartMenuMode.Compact, CompactMenuWidth = 640, CompactMenuHeight = 480, Animate = false },
+            Preferences = new()
+            {
+                StartMenuMode = StartMenuMode.Compact,
+                TransparentCompactBackground = true,
+                CompactMenuWidth = 640,
+                CompactMenuHeight = 480,
+                Animate = false,
+                BackgroundColor = "#234567"
+            },
             Groups =
             [
                 new() { Name = "Clock group", Column = 0, Row = 0, Tiles = [new() { Label = "Clock", Widget = "clock", Live = true }] },
@@ -68,6 +79,36 @@ public partial class MainWindow
                 initial == CompactMenuBounds.Place(area, fixture._compactDock, new(640, 480), dpi), "Compact did not present its requested window.");
             Require(GetClientRect(handle, out var client) && client.Right == initial.Width && client.Bottom == initial.Height,
                 "A native frame consumes Compact's client area.");
+            Require(fixture.HasTransparentCompactBackground == !SystemParameters.HighContrast &&
+                fixture.Wallpaper.Visibility == (SystemParameters.HighContrast ? Visibility.Visible : Visibility.Collapsed) &&
+                ((SolidColorBrush)fixture.FindResource("StartTileBrush")).Color.A == byte.MaxValue,
+                "Compact did not preserve its tile surfaces or apply the requested backdrop.");
+            if (!SystemParameters.HighContrast)
+            {
+                var clock = VisualChildren<TileSurfaceButton>(fixture.GroupsPanel)
+                    .Single(button => button.Tag is Tile { Widget: "clock" });
+                Require(clock.Template.FindName("TilePlate", clock) is Border plate &&
+                    plate.Background == clock.Background && plate.Opacity == CompactSurfaceOpacity &&
+                    clock.Template.FindName("Chrome", clock) is Border chrome && chrome.Background == Brushes.Transparent &&
+                    clock.Opacity == 1 && fixture.NavigationRail.Background is SolidColorBrush { Color.A: 255, Opacity: 1 } &&
+                    fixture.ExpandedRail.Background is SolidColorBrush { Color.A: 255, Opacity: 1 } &&
+                    VisualChildren<GroupHeader>(fixture.GroupsPanel).First().Background.Opacity == CompactSurfaceOpacity,
+                    "Compact did not keep the navigation rail solid and the tile and group backgrounds translucent.");
+                var background = clock.Background;
+                var gradient = new LinearGradientBrush(Colors.Blue, Colors.Teal, 35);
+                clock.Background = gradient;
+                Require(clock.Template.FindName("TilePlate", clock) is Border updatedPlate && updatedPlate.Background == gradient
+                    && updatedPlate.Opacity == CompactSurfaceOpacity && clock.Opacity == 1,
+                    "A late tile background bypassed the translucent plate.");
+                clock.Background = background;
+                foreach (var (opacity, alpha) in new[] { (0d, 0), (1d, 255), (.65, 165) })
+                {
+                    fixture.Document.Preferences.CompactBackgroundOpacity = opacity;
+                    fixture.ApplyAppearance();
+                    Require(((SolidColorBrush)fixture.Tint.Background).Color == Color.FromArgb((byte)alpha, 0x23, 0x45, 0x67),
+                        $"Compact tint did not apply the theme color at opacity {opacity}.");
+                }
+            }
             var middleX = initial.Left + initial.Width / 2;
             var middleY = initial.Top + initial.Height / 2;
             (int X, int Y, int Hit)[] hits =
@@ -147,8 +188,17 @@ public partial class MainWindow
 
             fixture.Document.Preferences.StartMenuMode = StartMenuMode.Fullscreen;
             fixture.RefreshLayout();
-            Require(!fixture._compactFrame && fixture.ResizeMode == ResizeMode.NoResize && ReadCompactBounds(handle) == area,
+            Require(!fixture._compactFrame && !fixture.HasTransparentCompactBackground &&
+                fixture.Wallpaper.Visibility == Visibility.Visible && fixture.ResizeMode == ResizeMode.NoResize && ReadCompactBounds(handle) == area &&
+                ((SolidColorBrush)fixture.Tint.Background).Color.A == (SystemParameters.HighContrast ? 255 : 219),
                 "Switching back to Fullscreen did not restore the original window bounds.");
+            fixture.UpdateLayout();
+            var fullscreenClock = VisualChildren<TileSurfaceButton>(fixture.GroupsPanel)
+                .Single(button => button.Tag is Tile { Widget: "clock" });
+            Require(fullscreenClock.Template.FindName("TilePlate", fullscreenClock) is Border fullscreenPlate &&
+                fullscreenPlate.Visibility == Visibility.Collapsed &&
+                fullscreenClock.Template.FindName("Chrome", fullscreenClock) is Border fullscreenChrome &&
+                fullscreenChrome.Background == fullscreenClock.Background, "Fullscreen lost the original tile background.");
             return hits.Length;
         }
         finally { fixture.Exit(); }

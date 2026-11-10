@@ -71,7 +71,7 @@
               </Grid>
             </StackPanel>
           </Grid>
-          <Border x:Name="EditBar" Grid.Row="1" Visibility="Collapsed" Background="{DynamicResource PanelBrush}" Padding="10" Margin="0,0,0,12">
+          <Border x:Name="EditBar" Grid.Row="1" Visibility="Collapsed" Background="{DynamicResource StartOverlayBrush}" Padding="10" Margin="0,0,0,12">
             <StackPanel>
               <WrapPanel>
                 <TextBlock Text="{local:Loc Key=EditLayout}" FontSize="18" VerticalAlignment="Center" Margin="0,0,20,0" />
@@ -122,7 +122,7 @@
           </StackPanel>
         </Grid>
       </Border>
-      <Border x:Name="AlphabetOverlay" Background="{DynamicResource PanelBrush}" Visibility="Collapsed" MaxWidth="620" MaxHeight="460" Padding="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <Border x:Name="AlphabetOverlay" Background="{DynamicResource StartOverlayBrush}" Visibility="Collapsed" MaxWidth="620" MaxHeight="460" Padding="24" HorizontalAlignment="Center" VerticalAlignment="Center">
         <DockPanel><Button DockPanel.Dock="Top" Content="{local:Loc Key=AlphabetTitle}" Click="CloseAlphabet" /><ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><WrapPanel x:Name="AlphabetButtons" Margin="0,16,0,0" /></ScrollViewer></DockPanel>
       </Border>
     </Grid>

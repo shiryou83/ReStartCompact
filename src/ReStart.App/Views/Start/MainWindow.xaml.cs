@@ -125,6 +125,7 @@ public partial class MainWindow : Window
             var square = 1;
             Native.DwmSetWindowAttribute(handle, 33, ref square, sizeof(int));
             InitializeCompactFrame(handle);
+            if (UsesNativeStartBounds && WantsCompact && DisplayPreferences.TransparentCompactBackground) RefreshLayout();
         };
         SizeChanged += (_, _) => FitPanels();
         ContentArea.SizeChanged += (_, _) => FitPanels();
@@ -351,15 +352,18 @@ public partial class MainWindow : Window
             // Exact Windows 10 acrylic composition remains a documented approximation.
             startBackground = Color.FromRgb((byte)(accent.R * 0.65), (byte)(accent.G * 0.65), (byte)(accent.B * 0.65));
         }
+        var transparent = ApplyCompactTransparency(UsesNativeStartBounds && WantsCompact && p.TransparentCompactBackground && !highContrast);
         Application.Current.Resources["StartTileBrush"] = new SolidColorBrush(highContrast ? background
-            : customBackground ? Mix(background, opposite, .12) : light ? Color.FromArgb(20, 0, 0, 0) : Color.FromArgb(32, 255, 255, 255));
+            : customBackground ? Mix(background, opposite, .12)
+            : transparent ? Mix(startBackground, opposite, (light ? 20 : 32) / 255d)
+            : light ? Color.FromArgb(20, 0, 0, 0) : Color.FromArgb(32, 255, 255, 255));
         ThemeWindow.IsLight = light;
         if (highContrast || p.BackgroundBlur <= 0) Wallpaper.Effect = null;
         else if (Wallpaper.Effect is not System.Windows.Media.Effects.BlurEffect blur || Math.Abs(blur.Radius - p.BackgroundBlur) > .01)
             Wallpaper.Effect = new System.Windows.Media.Effects.BlurEffect { Radius = p.BackgroundBlur, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance };
         foreach (Window window in Application.Current.Windows) ThemeWindow.Apply(window);
-        Tint.Background = new SolidColorBrush(Color.FromArgb((byte)(highContrast ? 255 : 255 * p.BackgroundOpacity), startBackground.R, startBackground.G, startBackground.B));
-        Root.Background = new SolidColorBrush(startBackground);
+        var opacity = transparent ? p.CompactBackgroundOpacity : p.BackgroundOpacity;
+        ApplyStartBackground(startBackground, (byte)(highContrast ? 255 : 255 * opacity), transparent);
         UpdateSearchChrome(SearchBox.Text.Trim().Length > 0 || _searchRequested);
         RefreshWallpaper();
         RefreshNavigationShortcuts();
@@ -451,7 +455,7 @@ public partial class MainWindow : Window
             var stack = new StackPanel { Background = Brushes.Transparent, Width = columns * Cell, Tag = group };
             if (!group.IsStandalone)
             {
-                var header = new GroupHeader(group.Name) { Tag = group };
+                var header = new GroupHeader(group.Name) { Tag = group, Background = _compactTextSurface };
                 header.IsPlacementLocked = Document.Preferences.LayoutLocked || Document.Preferences.LockedGroupIds.Contains(group.Id);
                 header.Handle.Tag = group;
                 AutomationProperties.SetName(header.Handle, L.T(K.GroupPrefix) + group.Name);
@@ -522,17 +526,16 @@ public partial class MainWindow : Window
         var nativeLive = Document.Preferences.LegacyUwpLiveTiles && tile.Live && LegacyEligible(tile);
         var displayName = TileDisplayName(tile);
         var button = new TileSurfaceButton { MotionAllowed = MotionEnabled, HoverHighlightEnabled = DisplayPreferences.TileHoverHighlight, Tag = tile, Padding = new(0), HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch, ToolTip = displayName };
+        if (HasTransparentCompactBackground && (!studioPreview || folderThumbnail)) button.PlateOpacity = CompactSurfaceOpacity;
         AutomationProperties.SetName(button, displayName + (tile.IsFolder && tile.Label.Length > 0 ? L.T(K.TileFolderSuffix) : ""));
-        var colorful = tile.UseCustomColor || DisplayPreferences.ColoredTiles || tile.Widget.Length > 0;
-        button.Background = colorful && !SystemParameters.HighContrast
-            ? (tile.UseCustomColor || tile.Widget.Length > 0) && tile.Color.Length > 0 ? Brush(tile.Color, "#0078D7") : (System.Windows.Media.Brush)FindResource("AccentBrush")
+        var highContrast = SystemParameters.HighContrast;
+        var overrideBrush = highContrast ? null : TileOverrideBrush(tile);
+        var colorful = overrideBrush != null || DisplayPreferences.ColoredTiles || tile.Widget.Length > 0;
+        button.Background = colorful && !highContrast
+            ? overrideBrush ?? (tile.Widget.Length > 0 && tile.Color.Length > 0 ? Brush(tile.Color, "#0078D7") : ThemeTileBrush(TileThemeColor.Accent))
             : (System.Windows.Media.Brush)FindResource("StartTileBrush");
-        if (colorful && !SystemParameters.HighContrast && button.Background is SolidColorBrush plate)
-        {
-            static double Linear(byte value) => value / 255d <= 0.04045 ? value / 255d / 12.92 : Math.Pow((value / 255d + 0.055) / 1.055, 2.4);
-            var luminance = 0.2126 * Linear(plate.Color.R) + 0.7152 * Linear(plate.Color.G) + 0.0722 * Linear(plate.Color.B);
-            button.Foreground = luminance > 0.179 ? Brushes.Black : Brushes.White;
-        }
+        if (colorful && !highContrast && button.Background is SolidColorBrush plate)
+            button.Foreground = ReadableTileInk(plate.Color, button.PlateOpacity);
         var grid = new Grid { Margin = new(webTile ? 0 : tile.Widget == "script" ? tile.Size == TileSize.Small ? 3 * DisplayPreferences.TileScale : 5 : 7) };
         if (tile.IsFolder)
         {
@@ -553,7 +556,8 @@ public partial class MainWindow : Window
             if (!_htmlFootprints.TryGetValue(tile.Id, out var previous) || previous != footprint) _scriptFrames.Remove(tile.Id);
             _htmlFootprints[tile.Id] = footprint;
             button.BorderThickness = new(0);
-            button.Background = tile.UseCustomColor ? button.Background : Brushes.Transparent;
+            if (!HasTileColorOverride(tile))
+                button.Background = Brushes.Transparent;
             grid.Children.Add(HtmlView(tile, folderThumbnail));
             var body = new StackPanel { Opacity = 0, IsHitTestVisible = false, Width = 0, Height = 0 };
             grid.Children.Add(body); _scriptViews.Add((tile, body, button));

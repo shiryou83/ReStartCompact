@@ -69,6 +69,7 @@ public partial class MainWindow
                                 Named<ComboBox>(editor, K.SettingsGroupWidth).SelectedIndex = 1;
                                 Named<Slider>(editor, K.SettingsTileSize).Value = 1.25;
                                 Named<Slider>(editor, K.SettingsOpacity).Value = .1;
+                                Named<Slider>(editor, K.SettingsCompactTint).Value = .4;
                                 Named<Slider>(editor, K.SettingsBlur).Value = 0;
                                 editor.ApplyDraftPreview(); fixture.UpdateLayout();
                                 Check(!fixture.DisplayPreferences.UseAppTileImages && fixture.Document.Preferences.UseAppTileImages,
@@ -76,6 +77,8 @@ public partial class MainWindow
                                 Check(fixture.DisplayPreferences.Theme == mode && fixture.GroupsPanel.TileColumns == 8 && Math.Abs(fixture.Cell - 65) < .01
                                     && fixture.Wallpaper.Effect == null, "Draft appearance and tile geometry were not rendered before saving.");
                                 Check(((SolidColorBrush)fixture.Tint.Background).Color.A == (SystemParameters.HighContrast ? 255 : 25), "Draft tint was not applied.");
+                                Check(fixture.DisplayPreferences.CompactBackgroundOpacity == .4 && fixture.Document.Preferences.CompactBackgroundOpacity == .65,
+                                    "Compact tint did not follow the draft independently of wallpaper opacity.");
                                 editor.SelectSection(L.T(K.SettingsLanguage));
                                 Named<ComboBox>(editor, K.SettingsDisplayLanguage).SelectedIndex = tag == "en" ? 2 : 1;
                                 editor.ApplyDraftPreview();
@@ -104,6 +107,8 @@ public partial class MainWindow
                         Check(fixture.Document.Preferences.UseAppTileImages == (decision != SettingsCloseChoice.Save)
                             && store.Load()!.Preferences.UseAppTileImages == (decision != SettingsCloseChoice.Save),
                             "The app artwork switch did not follow Settings save/discard.");
+                        Check(store.Load()!.Preferences.CompactBackgroundOpacity == (decision == SettingsCloseChoice.Save ? .4 : .65),
+                            "Compact tint did not follow Settings save/discard.");
                         Check(decision == SettingsCloseChoice.Save ? fixture.Document.Preferences.TileScale == 1.25 && store.Load()!.Preferences.Columns == 8
                             && store.Load()!.Preferences.TabletHideTaskbar && !store.Load()!.Preferences.ShowTaskbarWhileOpen
                             : JsonSerializer.Serialize(fixture.Document.Preferences) == original && JsonSerializer.Serialize(store.Load()!.Preferences) == original,

@@ -12,6 +12,10 @@ Compact starts at 800 × 640 device-independent pixels (DIPs). Its minimum is 64
 
 The completed resize stores the changed dimensions in the local layout preferences. Opening on a smaller or higher-DPI display limits the window to the available area while retaining the preferred dimensions for a later opening. Changing back to Fullscreen keeps those preferences for the next use of Compact. A temporary auto-hide reveal uses the content-safe area published by the existing taskbar integration.
 
+Enable **Transparent Compact background** in Appearance to see the desktop and other windows through the menu. **Compact tint intensity** adjusts how strongly the theme color covers the backdrop. It starts at 65%, with a clear backdrop at 0% and a solid theme color at 100%. Tile backgrounds, group headers and search surfaces add a translucent layer over that backdrop. The navigation rail has a solid background. The clock and calendar cards use the same treatment for their gradients. Icon, text and image opacity follow the original tile. Compact uses the usual wallpaper and tint again when the option is cleared. High contrast keeps the opaque appearance.
+
+Under **ReStart → Tile background color**, choose **Theme background** or **Theme accent** to match a tile to the active palette. The selection follows later theme changes. **Automatic** uses the app, widget or shared tile appearance.
+
 ## Upstream integration
 
 | Area | Fork change and merge point |
@@ -19,7 +23,8 @@ The completed resize stores the changed dimensions in the local layout preferenc
 | Window lifecycle | `MainWindow.Compact.cs` owns the native frame, hit tests, sizing loop and resize save. Keep the HWND hook in `MainWindow.xaml.cs` and the shared placement call in the cold startup and warm presentation paths. |
 | Placement and DPI | `MainWindow.Taskbar.cs` selects the original fullscreen fit or the compact fit. `CompactMenuBounds.cs` calculates the physical bounds. `TaskbarNativeBackend.cs` reads the dock edge using the existing Explorer and auto-hide discovery. Review these seams if upstream changes working-area resolution, DPI handling or taskbar reveal. |
 | Input | `StartIntegration.cs` routes an outside click in Compact through the existing dismiss callback. MainWindow guards taskbar and focus dismissal during the native resize loop. Preserve these guards if upstream changes dismissal or activation. |
-| Settings and storage | The mode and two DIP dimensions are additive fields on `Preferences`, normalized by `LayoutDocument` and saved by `LayoutStore`. The Appearance selector uses the normal settings draft and all eight locale catalogs. Review these additions if upstream changes the settings schema or editor. |
+| Background | `MainWindow.CompactBackground.cs` enables DWM client alpha on the existing HWND. `ApplyAppearance` separates the transparent backdrop from the opaque tile and text surfaces. |
+| Settings and storage | The mode, DIP dimensions and background options are additive fields on `Preferences`, normalized by `LayoutDocument` and saved by `LayoutStore`. Appearance uses the normal settings draft and all eight locale catalogs. Review these additions if upstream changes the settings schema or editor. |
 | Updates | The existing release source and updater still apply. A package from upstream can replace the fork executable. |
 
 The usual preview window keeps its development frame. The isolated Compact fixture opts into the production frame and geometry paths with a fictional layout.

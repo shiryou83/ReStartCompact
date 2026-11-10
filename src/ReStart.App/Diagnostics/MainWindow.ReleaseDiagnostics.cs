@@ -69,9 +69,32 @@ public partial class MainWindow
             colorMenu.Items.OfType<MenuItem>().First().RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
             Require(!customTile.UseCustomColor && (SystemParameters.HighContrast || ((SolidColorBrush)TileButton(customTile).Background).Color.A < 255),
                 "Resetting a tile did not restore its theme color.");
+            SelectTileColor(customTile, K.TileThemeAccent);
+            SelectTileColor(neighbor, K.TileThemeColor);
+            var savedColors = LayoutStore.Read(path).Groups[0].Tiles;
+            Require(savedColors[0].ThemeColor == TileThemeColor.Accent && savedColors[1].ThemeColor == TileThemeColor.Background &&
+                !savedColors[0].UseCustomColor && !savedColors[1].UseCustomColor,
+                "Selecting a theme swatch stored a fixed color or changed the other tile.");
+            foreach (var theme in new[] { "forest", "rose" })
+            {
+                ThemePresets.Apply(fixture.Document.Preferences, theme);
+                fixture.RefreshLayout();
+                var palette = ThemePresets.Resolve(fixture.Document.Preferences, false);
+                Require(SystemParameters.HighContrast ||
+                    ((SolidColorBrush)TileButton(customTile).Background).Color == (Color)ColorConverter.ConvertFromString(palette.Accent) &&
+                    ((SolidColorBrush)TileButton(neighbor).Background).Color == (Color)ColorConverter.ConvertFromString(palette.Background),
+                    "Theme tiles did not follow the palette after changing themes.");
+            }
+            SelectTileColor(neighbor, K.TileAutomaticColor);
+            Require(neighbor.ThemeColor == TileThemeColor.Automatic && customTile.ThemeColor == TileThemeColor.Accent,
+                "Returning one tile to automatic changed the other tile's theme selection.");
             fixture.SetTileColor(customTile, "#107C10");
             fixture.SaveScreenshot(Path.Combine(Path.GetDirectoryName(snapshotPath)!, "individual-tile-color.png"));
             fixture.Document.Preferences.ShowAccentOnStart = false;
+
+            void SelectTileColor(Tile tile, TextKey key) => fixture.TileColorMenu(tile).Items.OfType<MenuItem>()
+                .Single(item => item.Header is string label && label == L.T(key)).RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+
             foreach (var language in TextCatalog.SupportedLanguages)
                 foreach (var theme in new[] { ReStart.Core.ThemeMode.Dark, ReStart.Core.ThemeMode.Light })
                 {
@@ -143,7 +166,7 @@ public partial class MainWindow
             Require(licenses.TryGetValue("ReStart (MIT)", out var own) && own.Contains("MIT License", StringComparison.Ordinal) && licenses.Count >= 4,
                 "The embedded app and dependency license texts are missing.");
             Require(LayoutStore.Read(path).LastUpgrade?.BackupFile == document.LastUpgrade!.BackupFile, "Reopening lost the durable migration record.");
-            return new(AppBuildInfo.Version, LayoutDocument.CurrentVersion, licenses.Count, TextCatalog.SupportedLanguages.Count * 2, 3, 3, 5, wallpaperChecks);
+            return new(AppBuildInfo.Version, LayoutDocument.CurrentVersion, licenses.Count, TextCatalog.SupportedLanguages.Count * 2, 3, 3, 9, wallpaperChecks);
         }
         finally { fixture.Exit(); LocalizationResources.Apply(originalLanguage); ApplyAppearance(); Activate(); }
     }

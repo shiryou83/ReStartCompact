@@ -11,6 +11,8 @@ internal sealed class TileSurfaceButton : Button
     internal bool MotionAllowed { get; set; }
     public static readonly DependencyProperty HoverHighlightEnabledProperty = DependencyProperty.Register(nameof(HoverHighlightEnabled), typeof(bool), typeof(TileSurfaceButton), new PropertyMetadata(true));
     public bool HoverHighlightEnabled { get => (bool)GetValue(HoverHighlightEnabledProperty); set => SetValue(HoverHighlightEnabledProperty, value); }
+    public static readonly DependencyProperty PlateOpacityProperty = DependencyProperty.Register(nameof(PlateOpacity), typeof(double), typeof(TileSurfaceButton), new PropertyMetadata(1d));
+    public double PlateOpacity { get => (double)GetValue(PlateOpacityProperty); set => SetValue(PlateOpacityProperty, value); }
     private readonly ScaleTransform _press = new();
     internal TileSurfaceButton()
     {

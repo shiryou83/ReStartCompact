@@ -21,6 +21,19 @@ public sealed class BackgroundPreferencesTests
     [Theory]
     [InlineData(-1, 0)]
     [InlineData(0, 0)]
+    [InlineData(.4, .4)]
+    [InlineData(2, 1)]
+    [InlineData(double.NaN, .65)]
+    public void CompactTintAllowsFullTransparencyAndKeepsItsOwnRange(double input, double expected)
+    {
+        var document = new LayoutDocument { Preferences = new() { CompactBackgroundOpacity = input, BackgroundOpacity = .3 } };
+        document.Normalize();
+        Assert.Equal(expected, document.Preferences.CompactBackgroundOpacity);
+        Assert.Equal(.3, document.Preferences.BackgroundOpacity);
+    }
+    [Theory]
+    [InlineData(-1, 0)]
+    [InlineData(0, 0)]
     [InlineData(12, 12)]
     [InlineData(35, 35)]
     [InlineData(50, 50)]

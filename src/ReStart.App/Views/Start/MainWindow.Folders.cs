@@ -62,7 +62,7 @@ public partial class MainWindow
     {
         var expansion = parent.Expansion!;
         var folder = expansion.Folder;
-        var name = new GroupHeader(folder.Label, K.NameFolder, K.NameFolder);
+        var name = new GroupHeader(folder.Label, K.NameFolder, K.NameFolder) { Background = _compactTextSurface };
         name.Handle.Click += (_, _) => name.BeginEdit();
         WireInlineName(name, value =>
         {

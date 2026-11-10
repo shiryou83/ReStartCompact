@@ -15,6 +15,17 @@ public partial class MainWindow
     private readonly HashSet<string> _folderThumbnailIds = [];
     private readonly Dictionary<string, (TileSize Size, double Scale)> _htmlFootprints = [];
     private bool _documentationHtmlRendering;
+    private const string StandardWebCardBackground = "background: linear-gradient(125deg, var(--start), var(--end));";
+    private static readonly string CompactWebCardStyle = FormattableString.Invariant($$"""
+
+        @supports (color: color-mix(in srgb, black, transparent)) {
+            body > .card {
+                background-image: linear-gradient(125deg,
+                    color-mix(in srgb, var(--start) {{CompactSurfaceOpacity * 100:0}}%, transparent),
+                    color-mix(in srgb, var(--end) {{CompactSurfaceOpacity * 100:0}}%, transparent));
+            }
+        }
+        """);
 
     private async void OnContentMouseWheel(object sender, MouseWheelEventArgs e)
     {
@@ -126,12 +137,19 @@ public partial class MainWindow
         RetireHtmlTiles(all: true);
     }
 
-    private async Task<(ScriptTileFrame? Frame, string? Error)> RenderHtmlTileAsync(Tile tile, object context, ScriptTilePackages.RenderSource package)
+    private async Task<(ScriptTileFrame? Frame, string? Error)> RenderHtmlTileAsync(Tile tile, Button button, object context, ScriptTilePackages.RenderSource package)
     {
         if (!_htmlTiles.TryGetValue(tile.Id, out var view)) return (null, null);
         view.SetImage(_slideshowImages.GetValueOrDefault(tile.Id));
         view.SetAssets(package.Assets);
-        var result = await view.RenderAsync(package.Html, package.Css, package.Script, tile.AllowWebNetwork && package.Manifest.Capabilities.Contains("web.network"), context);
+        var css = package.Css;
+        if (HasTransparentCompactBackground && css.Contains(StandardWebCardBackground, StringComparison.Ordinal))
+        {
+            // Apply the standard card treatment to installed copies as well as new ones.
+            css += CompactWebCardStyle;
+            button.Background = Brushes.Transparent;
+        }
+        var result = await view.RenderAsync(package.Html, css, package.Script, tile.AllowWebNetwork && package.Manifest.Capabilities.Contains("web.network"), context);
         if (result.Frame != null && _folderThumbnailIds.Contains(tile.Id)) await view.FreezeForDocumentationAsync();
         return result;
     }
